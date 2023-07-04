@@ -5,23 +5,16 @@ const db = new sqlite.Database('./baza.db', sqlite.OPEN_READWRITE, (err) => {
     if (err) return console.error(err);
 });
 
+const usersRoutes = require('./routes/users.js');
+
 const app = express();
 app.use(express.json());
-
+app.use('/users', usersRoutes);
 // get request
 app.get('/', (req, res) => {
-    console.log(req.query)
-    res.status(200).send(req.query)
+    console.log('GET');
+    res.send('Homepage');
 });
 
-// post request
-app.get('/:id', (req, res) => {
-    console.log(req.params)
-    res.status(200).send(req.params)
-});
-
-app.post('/', (req, res) => {
-    console.log(insert('ds'));
-});
 
 app.listen(3000, () => console.log("Server started"));

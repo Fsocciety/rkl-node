@@ -5,13 +5,11 @@ const excel = require('exceljs');
 async function excelRead() {
     
     const workbook = new excel.Workbook();
-    // use readFile for testing purpose
-    // await workbook.xlsx.load(objDescExcel.buffer);
+
     await workbook.xlsx.readFile('./sqlite/24.05.2023.xlsx');
     let jsonData = [];
      
     workbook.worksheets.forEach(function(sheet) {
-        // read first row as data keys
         let firstRow = sheet.getRow(13);
         if (!firstRow.cellCount) return;
         let keys = firstRow.values;
@@ -46,15 +44,41 @@ excelRead()
 
 
 function insertRow(data) {
-    for (let item of data) {
-        db.run(
-        `INSERT INTO izvestaj(broj, datum, posiljalac, porucilac, primalac, artikal, prevoznik, registracija, vozac, bruto, tara, neto) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, Object.values(item),
-        function(error) {
-            if (error) {
-                console.error(error.message);
-            }
-                console.log(`Inserted a row with the ID: ${this.lastID}`);
-            }
-        )
-    }
+    console.log(queryData(db, data))
+    // if(queryData(db, data)) {
+    //     console.log('Data already exists');
+    // } else {
+    //     console.log('nije isto')
+    //     for (let item of data) {
+    //         db.run(
+    //         `INSERT INTO izvestaj(broj, datum, posiljalac, porucilac, primalac, artikal, prevoznik, registracija, vozac, bruto, tara, neto) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, Object.values(item),
+    //         function(error) {
+    //             if (error) {
+    //                 console.error(error.message);
+    //             }
+    //                 console.log(`Inserted a row with the ID: ${this.lastID}`);
+    //             }
+    //         )
+    //     }
+    // }
+    
 }
+
+function queryData(db, data) {
+    let b;
+    db.all(`SELECT * FROM izvestaj`, [],(err, rows) => {
+        if (err)
+            console.log(err);
+        else {
+            data.forEach(element => {
+                rows.forEach(row => {
+                    if(element['broj'] == row['Broj']) {
+                        b = true;
+                    }
+                })
+            }) 
+        }
+    });
+    db.close();
+}
+
