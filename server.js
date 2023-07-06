@@ -1,20 +1,15 @@
 const express = require('express');
-const sqlite = require('sqlite3').verbose();
-const insert = require('./sqlite/insertData');
-const db = new sqlite.Database('./baza.db', sqlite.OPEN_READWRITE, (err) => {
-    if (err) return console.error(err);
-});
-
-const usersRoutes = require('./routes/users.js');
+const usersRoutes = require('./routes/files.js');
 
 const app = express();
+
 app.use(express.json());
-app.use('/users', usersRoutes);
+app.use('/files', usersRoutes);
+
 // get request
-app.get('/', (req, res) => {
-    console.log('GET');
-    res.send('Homepage');
+app.get('/', async (req, res) => {
+    res.status(200).send('Hello');
 });
 
 
-app.listen(3000, () => console.log("Server started"));
+app.listen(3000, () => console.log("Server started on port http://localhost:3000"));
