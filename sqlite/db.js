@@ -1,7 +1,6 @@
 const excel = require('./excel.js');
 const sqlite = require('sqlite3').verbose();
 
-let res = excel.read('./sqlite/23.05.2023.xlsx', 2);
 
 const db = new sqlite.Database('./sqlite/baza.db', (error) => {
     if(error) console.log(error);
@@ -20,8 +19,7 @@ function createTableFile() {
             "name"      TEXT    NOT NULL UNIQUE,
             "upload_dt" TEXT    NOT NULL,
             PRIMARY KEY ("id" AUTOINCREMENT)
-        );
-    `, (error) => {
+        );`, (error) => {
         if(error) console.log(error);
         else console.log('Table file created successfuly!')
     });
@@ -29,7 +27,7 @@ function createTableFile() {
 
 function createTableIzvestaj() {
     db.run(`
-        CREATE TABLE izvestaj
+        CREATE TABLE IF NOT EXISTS izvestaj
         (
             "id"           INTEGER NOT NULL UNIQUE,
             "broj"         INTEGER NOT NULL,
@@ -48,9 +46,8 @@ function createTableIzvestaj() {
             "file_id"      INTEGER NOT NULL,
             PRIMARY KEY ("id" AUTOINCREMENT),
             FOREIGN KEY ("file_id") REFERENCES "file"
-        );`,   
-    (error) => {
-        if (error) console.log(error.message);
+        );`, (error) => {
+        if (error) console.log(error);
         else console.log('Table izvestaj created successfuly');
     })
 }
@@ -63,22 +60,29 @@ module.exports.insertFileIntoDb = async function (fileName) {
                 else resolve(rows);
             })
         });
+        console.log(rows);
         let temp = ['blabla'];
         rows.forEach(row => {
             temp.push(row.name);
         })
         console.log(fileName);
         if (temp.includes(fileName)) {
-            console.log('Data already exists')
+            
         } else {
+            db.run('UPDATE sqlite_sequence SET seq=1 WHERE name="file"', function(error) { if(error) console.log(error) })
             let time = new Date().toISOString().replace(/T/, ' ').replace(/\..+/, '');
             let sql = `INSERT INTO file(name, upload_dt)
                     VALUES (?, ?)`;
-            db.run(sql, [fileName, time], error => {
-                if (error) console.log(error.message);
-                else console.log(`Inserted a row with the ID: ${this.lastID}`)
+            db.run(sql, [fileName, time], function(error) {
+                if (error) {
+                     console.log(error.message);
+                } else {
+                    console.log(`Inserted a row with the ID: ${this.lastID}`)
+                    let res = excel.read(`./uploads/${fileName}`)
+                    insertIzvestajIntoDb(res, this.lastID);
+                }
             })
-            insertIzvestajIntoDb(res);
+            
         }
     } catch (error) {
         console.error(error)
@@ -87,16 +91,49 @@ module.exports.insertFileIntoDb = async function (fileName) {
 }
 
 
-this.insertFileIntoDb('23.05.2023.xlsx');
 
-
-module.exports.insertIzvestajIntoDb = function (data) {
-    data.forEach(element => {
+function insertIzvestajIntoDb(data, file_id) {
+    data.forEach(row => {
+        row.push(file_id)
         db.run(`INSERT INTO izvestaj 
             (broj, datum, vreme, posiljalac,
             porucilac, primalac, artikal,
             prevoznik, registracija, vozac,
             bruto, tara, neto, file_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, Object.values(element), (error) => error ? console.log(error.message) : console.log(`Row was added at: ${this.lastID}`))
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, row, (error) => {
+                if (error) {
+                    console.log(error);
+                } else {
+                    console.log(this.lastID);
+                }
+            })
+    })
+}
+
+module.exports.read = async function() {
+    const data = await new Promise((resolve, reject) => {
+        db.all('SELECT * FROM izvestaj', (error, rows) => {
+            if (error) reject(error)
+            else resolve(rows);
+        })
+    })
+    return data;
+}
+
+
+module.exports.delete = function(file_id) {
+    db.run('DELETE FROM file WHERE name = ?', file_id, (error) => {
+        if(error) {
+            console.log(error);
+        } else {
+            console.log('File successfuly deleted')
+        }
+    })
+    db.run('DELETE FROM izvestaj WHERE file_id = ?', file_id, (error) => {
+        if(error) {
+            console.log(error);
+        } else {
+            console.log('Izvestaj successfuly deleted')
+        }
     })
 }
