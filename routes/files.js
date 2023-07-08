@@ -36,7 +36,8 @@ router.post('/', upload.single('file') ,(req, res) => {
         message: 'File uploaded',
         data: data
     });
-})
+});
+
 router.delete('/:fileName', async (req, res) => {
     let uploadedFiles = await new Promise((resolve, reject) => {
         fs.readdir('../rkl-node/uploads', (error, files) => {
@@ -45,14 +46,14 @@ router.delete('/:fileName', async (req, res) => {
             } else {
                 resolve(files);
             }
-        })
-    })
+        });
+    });
     const fileName = req.params.fileName;
     if (uploadedFiles.includes(fileName)) {
         db.delete(fileName);
-        fs.unlink(`./uploads/${fileName}`, (error) => {if (error) console.log(error)})
+        fs.unlink(`./uploads/${fileName}`, (error) => {if (error) console.log(error)});
     }
-    res.status(200).send('File deleted successfuly')
-})
+    res.status(200).json('File deleted successfuly');
+});
 
 module.exports = router;
